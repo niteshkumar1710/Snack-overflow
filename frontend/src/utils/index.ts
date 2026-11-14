@@ -1,2 +1,1 @@
-// Placeholder for frontend utility functions
-export {};
+export * from './snackUtils';

@@ -1,2 +1,2 @@
-// Placeholder for page components (Login, Dashboard, Admin)
-export {};
+export * from './LoginPage';
+export * from './DashboardPage';
