@@ -71,6 +71,7 @@ class SnackResponse(BaseModel):
     low_stock_threshold: int
     status: str
     votes_count: int = 0
+    user_has_voted: bool = False
     created_at: datetime
     updated_at: datetime
 

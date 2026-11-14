@@ -54,6 +54,7 @@ def get_snacks(
         search=search,
         category=category,
         status=status,
+        current_user=current_user,
     )
     return PaginatedSnacksResponse(
         items=items,
@@ -71,7 +72,7 @@ def get_snack(
     db: Session = Depends(get_db),
 ) -> SnackResponse:
     """Retrieve details of a single snack by its unique ID."""
-    return snack_service.get_snack_by_id(db=db, snack_id=snack_id)
+    return snack_service.get_snack_by_id(db=db, snack_id=snack_id, current_user=current_user)
 
 
 @router.post("", response_model=SnackResponse, status_code=status.HTTP_201_CREATED)

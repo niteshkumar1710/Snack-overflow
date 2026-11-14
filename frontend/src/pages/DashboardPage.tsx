@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Package,
   CheckCircle2,
@@ -8,6 +9,7 @@ import {
   AlertCircle,
   PieChart,
   ArrowRight,
+  Cookie,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { summaryApi } from '../api/summary';
@@ -183,25 +185,29 @@ export const DashboardPage: React.FC = () => {
         </div>
       </section>
 
-      {/* Architecture & Stage 8 Roadmap Note */}
+      {/* Snacks Catalog Action Banner */}
       <section className="bg-gradient-to-r from-slate-900 to-slate-800 text-white rounded-2xl p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-md">
         <div className="space-y-2 max-w-xl">
           <div className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-xs font-semibold">
-            <span>Next Stage: Snack Catalog & Member Actions</span>
+            <Cookie className="w-3.5 h-3.5" />
+            <span>Pantry Snacks Catalog</span>
           </div>
           <h3 className="text-lg sm:text-xl font-bold tracking-tight">
-            Ready for Stage 8: Snack List, Filtering & Live Consumption
+            Browse, Vote & Grab Your Office Snacks
           </h3>
           <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-            In the upcoming stage, employees will be able to search, filter by category and status,
-            vote with 1-click updates, and consume snacks with instant HTTP 409 concurrency conflict alerts.
+            Search across categories, filter by stock availability, cast your vote for Snack of the Week,
+            and consume snacks with live concurrency protection.
           </p>
         </div>
 
-        <div className="flex items-center text-amber-400 font-semibold text-sm group cursor-default">
-          <span>Stage 7 Live</span>
-          <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-        </div>
+        <Link
+          to="/snacks"
+          className="inline-flex items-center space-x-2 px-5 py-2.5 rounded-xl font-bold text-sm bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-md shadow-amber-500/20 transition-all hover:scale-105 active:scale-95 self-start md:self-center"
+        >
+          <span>Open Snacks Catalog</span>
+          <ArrowRight className="w-4 h-4" />
+        </Link>
       </section>
     </div>
   );

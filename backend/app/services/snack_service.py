@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.models.snack import Snack, ALLOWED_CATEGORIES
 from app.models.vote import Vote
+from app.models.user import User
 from app.schemas.snack import SnackCreate, SnackUpdate, SnackResponse
 from app.utils.errors import AppException
 
@@ -20,6 +21,7 @@ class SnackService:
         search: Optional[str] = None,
         category: Optional[str] = None,
         status: Optional[str] = None,
+        current_user: Optional[User] = None,
     ) -> Tuple[List[SnackResponse], int, int]:
         """Fetch paginated, filtered, and searched snacks from the database.
         
@@ -70,7 +72,13 @@ class SnackService:
         offset = (page - 1) * page_size
         snacks = query.order_by(Snack.name.asc()).offset(offset).limit(page_size).all()
 
-        # Convert to response schemas with vote counts
+        # Query user voted snack IDs if user is authenticated
+        user_voted_ids = set()
+        if current_user:
+            user_votes = db.query(Vote.snack_id).filter(Vote.user_id == current_user.id).all()
+            user_voted_ids = {v[0] for v in user_votes}
+
+        # Convert to response schemas with vote counts and user vote state
         items: List[SnackResponse] = []
         for snack in snacks:
             vote_count = db.query(func.count(Vote.id)).filter(Vote.snack_id == snack.id).scalar() or 0
@@ -83,6 +91,7 @@ class SnackService:
                     low_stock_threshold=snack.low_stock_threshold,
                     status=snack.status,
                     votes_count=vote_count,
+                    user_has_voted=(snack.id in user_voted_ids),
                     created_at=snack.created_at,
                     updated_at=snack.updated_at,
                 )
@@ -91,7 +100,7 @@ class SnackService:
         return items, total, total_pages
 
     @staticmethod
-    def get_snack_by_id(db: Session, snack_id: int) -> SnackResponse:
+    def get_snack_by_id(db: Session, snack_id: int, current_user: Optional[User] = None) -> SnackResponse:
         """Fetch details of a specific snack by ID."""
         snack = db.query(Snack).filter(Snack.id == snack_id).first()
         if not snack:
@@ -102,6 +111,15 @@ class SnackService:
             )
 
         vote_count = db.query(func.count(Vote.id)).filter(Vote.snack_id == snack.id).scalar() or 0
+        user_has_voted = False
+        if current_user:
+            user_has_voted = (
+                db.query(Vote)
+                .filter(Vote.snack_id == snack.id, Vote.user_id == current_user.id)
+                .first()
+                is not None
+            )
+
         return SnackResponse(
             id=snack.id,
             name=snack.name,
@@ -110,6 +128,7 @@ class SnackService:
             low_stock_threshold=snack.low_stock_threshold,
             status=snack.status,
             votes_count=vote_count,
+            user_has_voted=user_has_voted,
             created_at=snack.created_at,
             updated_at=snack.updated_at,
         )

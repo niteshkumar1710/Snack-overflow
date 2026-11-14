@@ -31,6 +31,7 @@ export interface Snack {
   low_stock_threshold: number;
   status: SnackStatus;
   votes_count: number;
+  user_has_voted?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -41,6 +42,36 @@ export interface PaginatedSnacks {
   page: number;
   page_size: number;
   total_pages: number;
+}
+
+export interface Activity {
+  id: number;
+  user_id: number;
+  snack_id: number;
+  action: 'consumed' | 'restocked';
+  amount: number;
+  created_at: string;
+}
+
+export interface ConsumptionResponse {
+  message: string;
+  snack: Snack;
+  activity: Activity;
+}
+
+export interface VoteResponse {
+  message: string;
+  snack_id: number;
+  votes_count: number;
+  has_voted: boolean;
+}
+
+export interface SnackQueryParams {
+  search?: string;
+  category?: string;
+  status?: string;
+  page?: number;
+  page_size?: number;
 }
 
 export interface PantrySummary {

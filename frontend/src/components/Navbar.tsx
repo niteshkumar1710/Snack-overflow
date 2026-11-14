@@ -1,15 +1,23 @@
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Coffee, LogOut, Shield, User as UserIcon } from 'lucide-react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Coffee, LogOut, Shield, User as UserIcon, LayoutDashboard, Cookie } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export const Navbar: React.FC = () => {
   const { user, isAdmin, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleLogout = () => {
     logout();
     navigate('/login');
+  };
+
+  const isCurrent = (path: string) => {
+    if (path === '/') {
+      return location.pathname === '/';
+    }
+    return location.pathname.startsWith(path);
   };
 
   return (
@@ -31,12 +39,29 @@ export const Navbar: React.FC = () => {
             </div>
           </Link>
 
-          <nav className="hidden md:flex items-center space-x-2">
+          <nav className="flex items-center space-x-1 sm:space-x-2">
             <Link
               to="/"
-              className="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-900 bg-slate-100 hover:bg-slate-200 transition-colors"
+              className={`inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-semibold transition-colors ${
+                isCurrent('/')
+                  ? 'text-amber-800 bg-amber-50 border border-amber-200/80 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              }`}
             >
-              Dashboard
+              <LayoutDashboard className="w-4 h-4" />
+              <span>Dashboard</span>
+            </Link>
+
+            <Link
+              to="/snacks"
+              className={`inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-semibold transition-colors ${
+                isCurrent('/snacks')
+                  ? 'text-amber-800 bg-amber-50 border border-amber-200/80 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              }`}
+            >
+              <Cookie className="w-4 h-4" />
+              <span>Snacks Catalog</span>
             </Link>
           </nav>
         </div>
