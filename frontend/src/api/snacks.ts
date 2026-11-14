@@ -3,8 +3,11 @@ import {
   PaginatedSnacks,
   Snack,
   ConsumptionResponse,
+  RestockResponse,
   VoteResponse,
   SnackQueryParams,
+  SnackCreateInput,
+  SnackUpdateInput,
 } from '../types';
 
 export const snackApi = {
@@ -70,6 +73,40 @@ export const snackApi = {
    */
   async unvoteSnack(snackId: number): Promise<VoteResponse> {
     const response = await apiClient.delete<VoteResponse>(`/snacks/${snackId}/vote`);
+    return response.data;
+  },
+
+  /**
+   * Create a new snack (Administrator only).
+   */
+  async createSnack(data: SnackCreateInput): Promise<Snack> {
+    const response = await apiClient.post<Snack>('/snacks', data);
+    return response.data;
+  },
+
+  /**
+   * Update an existing snack's details (Administrator only).
+   */
+  async updateSnack(snackId: number, data: SnackUpdateInput): Promise<Snack> {
+    const response = await apiClient.patch<Snack>(`/snacks/${snackId}`, data);
+    return response.data;
+  },
+
+  /**
+   * Delete a snack and associated records (Administrator only).
+   */
+  async deleteSnack(snackId: number): Promise<{ message: string; id: number }> {
+    const response = await apiClient.delete<{ message: string; id: number }>(`/snacks/${snackId}`);
+    return response.data;
+  },
+
+  /**
+   * Restock a snack with positive amount and log restocked activity (Administrator only).
+   */
+  async restockSnack(snackId: number, amount: number): Promise<RestockResponse> {
+    const response = await apiClient.post<RestockResponse>(`/snacks/${snackId}/restock`, {
+      amount,
+    });
     return response.data;
   },
 };

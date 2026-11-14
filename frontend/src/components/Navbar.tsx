@@ -63,6 +63,20 @@ export const Navbar: React.FC = () => {
               <Cookie className="w-4 h-4" />
               <span>Snacks Catalog</span>
             </Link>
+
+            {isAdmin && (
+              <Link
+                to="/admin"
+                className={`inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-semibold transition-colors ${
+                  isCurrent('/admin')
+                    ? 'text-purple-800 bg-purple-50 border border-purple-200/80 shadow-xs'
+                    : 'text-purple-700 hover:text-purple-900 hover:bg-purple-50'
+                }`}
+              >
+                <Shield className="w-4 h-4 text-purple-600" />
+                <span>Admin Portal</span>
+              </Link>
+            )}
           </nav>
         </div>
 

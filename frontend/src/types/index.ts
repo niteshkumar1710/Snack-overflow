@@ -59,6 +59,26 @@ export interface ConsumptionResponse {
   activity: Activity;
 }
 
+export interface RestockResponse {
+  message: string;
+  snack: Snack;
+  activity: Activity;
+}
+
+export interface SnackCreateInput {
+  name: string;
+  category: SnackCategory;
+  quantity: number;
+  low_stock_threshold: number;
+}
+
+export interface SnackUpdateInput {
+  name?: string;
+  category?: SnackCategory;
+  quantity?: number;
+  low_stock_threshold?: number;
+}
+
 export interface VoteResponse {
   message: string;
   snack_id: number;
