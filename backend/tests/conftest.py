@@ -52,7 +52,7 @@ def db_session() -> Generator[Session, None, None]:
 
 @pytest.fixture(scope="function")
 def auth_client(db_session: Session) -> Generator[TestClient, None, None]:
-    """Provides a TestClient whose database dependency is hooked into the test db_session."""
+    """Provides a TestClient whose database dependency is hooked into the isolated test db_session."""
     def override_get_db():
         try:
             yield db_session

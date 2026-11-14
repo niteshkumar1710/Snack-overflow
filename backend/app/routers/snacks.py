@@ -11,7 +11,14 @@ from app.schemas.snack import (
     SnackResponse,
     PaginatedSnacksResponse,
 )
+from app.schemas.activity import (
+    ConsumeRequest,
+    RestockRequest,
+    ConsumptionResponse,
+    RestockResponse,
+)
 from app.services.snack_service import snack_service
+from app.services.consumption_service import consumption_service
 
 router = APIRouter(prefix="/snacks", tags=["Snacks"])
 
@@ -87,3 +94,45 @@ def delete_snack(
         "message": f"Snack '{snack_name}' was deleted successfully.",
         "id": snack_id,
     }
+
+
+@router.post("/{snack_id}/consume", response_model=ConsumptionResponse)
+def consume_snack(
+    snack_id: int,
+    payload: ConsumeRequest = ConsumeRequest(amount=1),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> ConsumptionResponse:
+    """Atomically consume one or more packets of a snack using database-level conditional updates."""
+    snack_resp, activity_resp = consumption_service.consume_snack(
+        db=db,
+        snack_id=snack_id,
+        user=current_user,
+        amount=payload.amount,
+    )
+    return ConsumptionResponse(
+        message=f"Successfully consumed {payload.amount} packet(s) of '{snack_resp.name}'.",
+        snack=snack_resp,
+        activity=activity_resp,
+    )
+
+
+@router.post("/{snack_id}/restock", response_model=RestockResponse)
+def restock_snack(
+    snack_id: int,
+    payload: RestockRequest,
+    admin: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+) -> RestockResponse:
+    """Restock snack quantity and log the restocked activity (Administrator only)."""
+    snack_resp, activity_resp = consumption_service.restock_snack(
+        db=db,
+        snack_id=snack_id,
+        admin=admin,
+        amount=payload.amount,
+    )
+    return RestockResponse(
+        message=f"Successfully restocked {payload.amount} packet(s) of '{snack_resp.name}'.",
+        snack=snack_resp,
+        activity=activity_resp,
+    )

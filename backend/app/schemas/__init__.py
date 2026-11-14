@@ -7,6 +7,13 @@ from app.schemas.snack import (
     SnackResponse,
     PaginatedSnacksResponse,
 )
+from app.schemas.activity import (
+    ConsumeRequest,
+    RestockRequest,
+    ActivityResponse,
+    ConsumptionResponse,
+    RestockResponse,
+)
 
 __all__ = [
     "UserBase",
@@ -19,4 +26,9 @@ __all__ = [
     "SnackUpdate",
     "SnackResponse",
     "PaginatedSnacksResponse",
+    "ConsumeRequest",
+    "RestockRequest",
+    "ActivityResponse",
+    "ConsumptionResponse",
+    "RestockResponse",
 ]
