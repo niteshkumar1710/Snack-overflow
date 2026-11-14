@@ -3,7 +3,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
-from app.routers import health
+from app.routers import health, auth
 from app.utils.errors import (
     AppException,
     app_exception_handler,
@@ -35,6 +35,7 @@ app.add_exception_handler(Exception, generic_exception_handler)
 
 # Include routers
 app.include_router(health.router)
+app.include_router(auth.router)
 
 
 @app.get("/")
