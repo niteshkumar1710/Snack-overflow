@@ -17,10 +17,23 @@ from app.schemas.activity import (
     ConsumptionResponse,
     RestockResponse,
 )
+from app.schemas.vote import VoteResponse
+from app.schemas.summary import PantrySummaryResponse
 from app.services.snack_service import snack_service
 from app.services.consumption_service import consumption_service
+from app.services.voting_service import voting_service
+from app.services.summary_service import summary_service
 
 router = APIRouter(prefix="/snacks", tags=["Snacks"])
+
+
+@router.get("/summary", response_model=PantrySummaryResponse)
+def get_pantry_summary(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> PantrySummaryResponse:
+    """Retrieve pantry dashboard metrics: stock status counts and Snack of the Week."""
+    return summary_service.get_pantry_summary(db=db)
 
 
 @router.get("", response_model=PaginatedSnacksResponse)
@@ -135,4 +148,36 @@ def restock_snack(
         message=f"Successfully restocked {payload.amount} packet(s) of '{snack_resp.name}'.",
         snack=snack_resp,
         activity=activity_resp,
+    )
+
+
+@router.post("/{snack_id}/vote", response_model=VoteResponse)
+def vote_for_snack(
+    snack_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> VoteResponse:
+    """Cast a vote for a pantry snack. Enforces one vote per user per snack."""
+    new_count = voting_service.cast_vote(db=db, user=current_user, snack_id=snack_id)
+    return VoteResponse(
+        message="Vote recorded successfully.",
+        snack_id=snack_id,
+        votes_count=new_count,
+        has_voted=True,
+    )
+
+
+@router.delete("/{snack_id}/vote", response_model=VoteResponse)
+def remove_vote_for_snack(
+    snack_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> VoteResponse:
+    """Remove the authenticated user's vote for a pantry snack."""
+    new_count = voting_service.remove_vote(db=db, user=current_user, snack_id=snack_id)
+    return VoteResponse(
+        message="Vote removed successfully.",
+        snack_id=snack_id,
+        votes_count=new_count,
+        has_voted=False,
     )

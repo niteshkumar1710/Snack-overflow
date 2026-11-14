@@ -14,6 +14,8 @@ from app.schemas.activity import (
     ConsumptionResponse,
     RestockResponse,
 )
+from app.schemas.vote import VoteResponse
+from app.schemas.summary import PantrySummaryResponse
 
 __all__ = [
     "UserBase",
@@ -31,4 +33,6 @@ __all__ = [
     "ActivityResponse",
     "ConsumptionResponse",
     "RestockResponse",
+    "VoteResponse",
+    "PantrySummaryResponse",
 ]
