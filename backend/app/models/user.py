@@ -33,11 +33,13 @@ class User(Base):
         "Vote",
         back_populates="user",
         cascade="all, delete-orphan",
+        passive_deletes=True,
     )
     activities: Mapped[List["Activity"]] = relationship(
         "Activity",
         back_populates="user",
         cascade="all, delete-orphan",
+        passive_deletes=True,
     )
 
     def __repr__(self) -> str:

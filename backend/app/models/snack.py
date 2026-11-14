@@ -47,11 +47,13 @@ class Snack(Base):
         "Vote",
         back_populates="snack",
         cascade="all, delete-orphan",
+        passive_deletes=True,
     )
     activities: Mapped[List["Activity"]] = relationship(
         "Activity",
         back_populates="snack",
         cascade="all, delete-orphan",
+        passive_deletes=True,
     )
 
     @property
