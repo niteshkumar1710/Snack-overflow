@@ -24,6 +24,7 @@ from app.services.consumption_service import consumption_service
 from app.services.voting_service import voting_service
 from app.services.summary_service import summary_service
 from app.services.idempotency_service import IdempotencyService
+from app.core.websockets import ws_manager
 
 router = APIRouter(prefix="/snacks", tags=["Snacks"])
 
@@ -112,7 +113,7 @@ def delete_snack(
 
 
 @router.post("/{snack_id}/consume", response_model=ConsumptionResponse)
-def consume_snack(
+async def consume_snack(
     snack_id: int,
     payload: ConsumeRequest = ConsumeRequest(amount=1),
     idempotency_key: Optional[str] = Header(None, alias="Idempotency-Key"),
@@ -122,6 +123,7 @@ def consume_snack(
     """Atomically consume one or more packets of a snack using database-level conditional updates.
 
     Supports optional Idempotency-Key header to prevent duplicate execution across retries.
+    Broadcasts real-time stock update to all connected WebSocket clients upon success.
     """
     idemp_record = None
     if idempotency_key:
@@ -160,6 +162,19 @@ def consume_snack(
                 response_data=response_obj.model_dump(mode="json"),
             )
 
+        # Broadcast real-time stock update after successful commit
+        await ws_manager.broadcast({
+            "type": "STOCK_UPDATED",
+            "event": "consumed",
+            "snack_id": snack_resp.id,
+            "snack_name": snack_resp.name,
+            "quantity": snack_resp.quantity,
+            "low_stock_threshold": snack_resp.low_stock_threshold,
+            "status": snack_resp.status,
+            "amount": payload.amount,
+            "user_id": current_user.id,
+        })
+
         return response_obj
     except Exception:
         if idemp_record:
@@ -168,7 +183,7 @@ def consume_snack(
 
 
 @router.post("/{snack_id}/restock", response_model=RestockResponse)
-def restock_snack(
+async def restock_snack(
     snack_id: int,
     payload: RestockRequest,
     idempotency_key: Optional[str] = Header(None, alias="Idempotency-Key"),
@@ -178,6 +193,7 @@ def restock_snack(
     """Restock snack quantity and log the restocked activity (Administrator only).
 
     Supports optional Idempotency-Key header to prevent duplicate execution across retries.
+    Broadcasts real-time stock update to all connected WebSocket clients upon success.
     """
     idemp_record = None
     if idempotency_key:
@@ -215,6 +231,19 @@ def restock_snack(
                 status_code=200,
                 response_data=response_obj.model_dump(mode="json"),
             )
+
+        # Broadcast real-time stock update after successful commit
+        await ws_manager.broadcast({
+            "type": "STOCK_UPDATED",
+            "event": "restocked",
+            "snack_id": snack_resp.id,
+            "snack_name": snack_resp.name,
+            "quantity": snack_resp.quantity,
+            "low_stock_threshold": snack_resp.low_stock_threshold,
+            "status": snack_resp.status,
+            "amount": payload.amount,
+            "user_id": admin.id,
+        })
 
         return response_obj
     except Exception:

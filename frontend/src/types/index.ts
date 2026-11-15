@@ -50,6 +50,18 @@ export interface PaginatedSnacks {
   total_pages: number;
 }
 
+export interface StockUpdatedEvent {
+  type: 'STOCK_UPDATED';
+  event: 'consumed' | 'restocked';
+  snack_id: number;
+  snack_name: string;
+  quantity: number;
+  low_stock_threshold: number;
+  status: SnackStatus;
+  amount: number;
+  user_id: number;
+}
+
 export interface Activity {
   id: number;
   user_id: number;

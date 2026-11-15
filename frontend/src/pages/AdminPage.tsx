@@ -14,13 +14,14 @@ import {
 } from 'lucide-react';
 import { snackApi } from '../api/snacks';
 import { getErrorMessage } from '../api/client';
-import { Snack, PaginatedSnacks, RestockResponse } from '../types';
+import { Snack, PaginatedSnacks, RestockResponse, StockUpdatedEvent } from '../types';
 import { StatusBadge } from '../components/StatusBadge';
 import { CategoryBadge } from '../components/CategoryBadge';
 import { Pagination } from '../components/Pagination';
 import { AddEditSnackModal } from '../components/AddEditSnackModal';
 import { RestockModal } from '../components/RestockModal';
 import { DeleteConfirmModal } from '../components/DeleteConfirmModal';
+import { usePantryWebSocket } from '../hooks/usePantryWebSocket';
 
 interface AlertNotification {
   type: 'success' | 'error';
@@ -92,6 +93,24 @@ export const AdminPage: React.FC = () => {
   useEffect(() => {
     loadSnacks();
   }, [loadSnacks]);
+
+  // Real-time stock updates via WebSocket
+  usePantryWebSocket(
+    useCallback((event: StockUpdatedEvent) => {
+      setSnacks((prevSnacks) =>
+        prevSnacks.map((s) => {
+          if (s.id === event.snack_id) {
+            return {
+              ...s,
+              quantity: event.quantity,
+              status: event.status,
+            };
+          }
+          return s;
+        })
+      );
+    }, [])
+  );
 
   // Modal Handlers
   const handleOpenAdd = () => {

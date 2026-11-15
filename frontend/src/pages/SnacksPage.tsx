@@ -9,10 +9,11 @@ import {
 } from 'lucide-react';
 import { snackApi } from '../api/snacks';
 import { getErrorMessage } from '../api/client';
-import { Snack, PaginatedSnacks } from '../types';
+import { Snack, PaginatedSnacks, StockUpdatedEvent } from '../types';
 import { SnackCard } from '../components/SnackCard';
 import { FilterBar } from '../components/FilterBar';
 import { Pagination } from '../components/Pagination';
+import { usePantryWebSocket } from '../hooks/usePantryWebSocket';
 
 interface AlertNotification {
   type: 'success' | 'conflict' | 'error';
@@ -84,6 +85,24 @@ export const SnacksPage: React.FC = () => {
   useEffect(() => {
     loadSnacks();
   }, [loadSnacks]);
+
+  // Real-time stock updates via WebSocket
+  usePantryWebSocket(
+    useCallback((event: StockUpdatedEvent) => {
+      setSnacks((prevSnacks) =>
+        prevSnacks.map((s) => {
+          if (s.id === event.snack_id) {
+            return {
+              ...s,
+              quantity: event.quantity,
+              status: event.status,
+            };
+          }
+          return s;
+        })
+      );
+    }, [])
+  );
 
   // Handler for reset filters
   const handleResetFilters = () => {
