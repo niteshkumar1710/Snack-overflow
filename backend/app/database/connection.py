@@ -3,11 +3,11 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, Session
 from app.core.config import settings
 
-# Build engine with a short connection timeout so that unreachable databases
-# fail fast during health checks and startup without hanging the event loop.
+# Build engine with connection arguments. A 5-second timeout ensures that
+# cold starts or pooler handshakes succeed reliably while still preventing indefinite hangs.
 connect_args = {}
 if "postgresql" in settings.DATABASE_URL:
-    connect_args["connect_timeout"] = 2
+    connect_args["connect_timeout"] = 5
 
 engine = create_engine(
     settings.DATABASE_URL,

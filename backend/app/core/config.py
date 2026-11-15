@@ -33,6 +33,16 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440  # 24 hours
 
+    @field_validator("JWT_SECRET_KEY")
+    @classmethod
+    def validate_jwt_secret(cls, v: str, info) -> str:
+        # Enforce strong secret in production
+        env = info.data.get("ENVIRONMENT", "development")
+        if env == "production":
+            if v == "snack_overflow_dev_super_secret_key_1234567890" or len(v) < 32:
+                raise ValueError("In production, JWT_SECRET_KEY must be a secure key with at least 32 characters.")
+        return v
+
     # CORS
     CORS_ORIGINS: Union[List[str], str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
 
