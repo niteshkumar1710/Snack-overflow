@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 from pydantic import BaseModel, Field, ConfigDict
 from app.schemas.snack import SnackResponse
 
@@ -52,6 +52,7 @@ class ActivitySnackResponse(BaseModel):
     """Minimal snack information embedded in an activity record."""
     id: int
     name: str
+    image_url: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -79,4 +80,27 @@ class ActivityPaginationMeta(BaseModel):
 class PaginatedActivitiesResponse(BaseModel):
     """Response model for paginated activity log."""
     items: List[ActivityItemResponse]
+    pagination: ActivityPaginationMeta
+
+
+class PersonalConsumptionItem(BaseModel):
+    """Personal consumption record for an employee."""
+    activity_id: int
+    snack_id: int
+    snack_name: str
+    snack_image_url: Optional[str] = None
+    amount: int
+    consumed_at: datetime
+
+
+class PersonalConsumptionSummary(BaseModel):
+    """Summary metrics of an employee's personal consumption."""
+    total_consumed_packets: int
+    unique_snacks_tried: int
+
+
+class PersonalConsumptionHistoryResponse(BaseModel):
+    """Response model for employee's personal consumption history."""
+    items: List[PersonalConsumptionItem]
+    summary: PersonalConsumptionSummary
     pagination: ActivityPaginationMeta

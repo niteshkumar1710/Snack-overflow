@@ -36,6 +36,7 @@ export interface Snack {
   quantity: number;
   low_stock_threshold: number;
   status: SnackStatus;
+  image_url?: string | null;
   votes_count: number;
   user_has_voted?: boolean;
   created_at: string;
@@ -119,6 +120,7 @@ export interface SnackCreateInput {
   category: SnackCategory;
   quantity: number;
   low_stock_threshold: number;
+  image_url?: string | null;
 }
 
 export interface SnackUpdateInput {
@@ -126,6 +128,37 @@ export interface SnackUpdateInput {
   category?: SnackCategory;
   quantity?: number;
   low_stock_threshold?: number;
+  image_url?: string | null;
+}
+
+export interface PersonalConsumptionItem {
+  id: number;
+  activity_id: number;
+  snack_id: number;
+  snack_name: string;
+  snack_image_url?: string | null;
+  amount: number;
+  action: string;
+  consumed_at: string;
+  created_at: string;
+}
+
+export interface PersonalConsumptionSummary {
+  total_consumed_packets: number;
+  unique_snacks_tried: number;
+}
+
+export interface PersonalConsumptionHistoryResponse {
+  items: PersonalConsumptionItem[];
+  pagination: ActivityPaginationMeta;
+  summary: PersonalConsumptionSummary;
+}
+
+export interface ConsumptionHistoryQueryParams {
+  page?: number;
+  limit?: number;
+  start_date?: string;
+  end_date?: string;
 }
 
 export interface VoteResponse {

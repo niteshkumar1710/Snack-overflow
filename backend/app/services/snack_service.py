@@ -90,6 +90,7 @@ class SnackService:
                     quantity=snack.quantity,
                     low_stock_threshold=snack.low_stock_threshold,
                     status=snack.status,
+                    image_url=snack.image_url,
                     votes_count=vote_count,
                     user_has_voted=(snack.id in user_voted_ids),
                     created_at=snack.created_at,
@@ -127,6 +128,7 @@ class SnackService:
             quantity=snack.quantity,
             low_stock_threshold=snack.low_stock_threshold,
             status=snack.status,
+            image_url=snack.image_url,
             votes_count=vote_count,
             user_has_voted=user_has_voted,
             created_at=snack.created_at,
@@ -150,6 +152,7 @@ class SnackService:
             category=snack_in.category,
             quantity=snack_in.quantity,
             low_stock_threshold=snack_in.low_stock_threshold,
+            image_url=snack_in.image_url,
         )
         db.add(snack)
         db.commit()
@@ -162,6 +165,7 @@ class SnackService:
             quantity=snack.quantity,
             low_stock_threshold=snack.low_stock_threshold,
             status=snack.status,
+            image_url=snack.image_url,
             votes_count=0,
             created_at=snack.created_at,
             updated_at=snack.updated_at,
@@ -202,6 +206,10 @@ class SnackService:
         if snack_in.low_stock_threshold is not None:
             snack.low_stock_threshold = snack_in.low_stock_threshold
 
+        if snack_in.image_url is not None:
+            # Empty string or explicit value sets/clears image_url
+            snack.image_url = snack_in.image_url if snack_in.image_url.strip() else None
+
         db.commit()
         db.refresh(snack)
 
@@ -213,6 +221,7 @@ class SnackService:
             quantity=snack.quantity,
             low_stock_threshold=snack.low_stock_threshold,
             status=snack.status,
+            image_url=snack.image_url,
             votes_count=vote_count,
             created_at=snack.created_at,
             updated_at=snack.updated_at,

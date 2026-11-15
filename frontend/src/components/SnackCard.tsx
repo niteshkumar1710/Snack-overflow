@@ -1,5 +1,5 @@
-import React from 'react';
-import { Heart, Utensils, Loader2, AlertCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { Heart, Utensils, Loader2, AlertCircle, Image as ImageIcon } from 'lucide-react';
 import { Snack } from '../types';
 import { StatusBadge } from './StatusBadge';
 import { CategoryBadge } from './CategoryBadge';
@@ -19,6 +19,7 @@ export const SnackCard: React.FC<SnackCardProps> = ({
   onConsume,
   onVoteToggle,
 }) => {
+  const [imageError, setImageError] = useState(false);
   const isOutOfStock = snack.quantity === 0;
   const isRunningLow = snack.quantity > 0 && snack.quantity <= snack.low_stock_threshold;
   const hasVoted = !!snack.user_has_voted;
@@ -33,14 +34,38 @@ export const SnackCard: React.FC<SnackCardProps> = ({
           : 'border-slate-200 hover:border-slate-300'
       }`}
     >
+      {/* Snack Image Header or Elegant Fallback Banner */}
+      <div className="relative w-full h-40 bg-slate-100 overflow-hidden group">
+        {snack.image_url && !imageError ? (
+          <img
+            src={snack.image_url}
+            alt={snack.name}
+            onError={() => setImageError(true)}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            loading="lazy"
+          />
+        ) : (
+          <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-amber-50 to-slate-100 text-slate-400">
+            <div className="w-12 h-12 rounded-xl bg-amber-100/70 text-amber-600 flex items-center justify-center shadow-inner mb-1">
+              <ImageIcon className="w-6 h-6" />
+            </div>
+            <span className="text-[11px] font-medium text-slate-400">Pantry Snack</span>
+          </div>
+        )}
+
+        {/* Floating Category & Status Overlay Badges */}
+        <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-2 pointer-events-none">
+          <div className="drop-shadow-sm">
+            <CategoryBadge category={snack.category} />
+          </div>
+          <div className="drop-shadow-sm">
+            <StatusBadge status={snack.status} />
+          </div>
+        </div>
+      </div>
+
       {/* Top Details */}
       <div className="p-5 space-y-3">
-        {/* Badges Bar */}
-        <div className="flex items-center justify-between gap-2">
-          <CategoryBadge category={snack.category} />
-          <StatusBadge status={snack.status} />
-        </div>
-
         {/* Snack Name */}
         <div>
           <h3 className="text-lg font-bold text-slate-900 tracking-tight leading-snug line-clamp-1">

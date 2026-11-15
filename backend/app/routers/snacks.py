@@ -1,10 +1,11 @@
 from typing import Optional
-from fastapi import APIRouter, Depends, Query, Header, status
+from fastapi import APIRouter, Depends, Query, Header, UploadFile, File, Form, status
 from sqlalchemy.orm import Session
 
 from app.core.dependencies import get_current_user, require_admin
 from app.database.connection import get_db
 from app.models.user import User
+from app.services.storage_service import storage_service
 from app.schemas.snack import (
     SnackCreate,
     SnackUpdate,
@@ -75,6 +76,16 @@ def get_snack(
 ) -> SnackResponse:
     """Retrieve details of a single snack by its unique ID."""
     return snack_service.get_snack_by_id(db=db, snack_id=snack_id, current_user=current_user)
+
+
+@router.post("/upload-image", summary="Upload snack image to storage (Admin only)")
+async def upload_snack_image(
+    file: UploadFile = File(...),
+    admin: User = Depends(require_admin),
+):
+    """Upload a snack image (JPEG/PNG/WebP, max 5MB) and return its public URL."""
+    image_url = await storage_service.upload_snack_image(file)
+    return {"image_url": image_url}
 
 
 @router.post("", response_model=SnackResponse, status_code=status.HTTP_201_CREATED)

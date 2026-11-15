@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Award, Heart, Package, Sparkles } from 'lucide-react';
 import { Snack } from '../types';
 import { StatusBadge } from './StatusBadge';
@@ -10,6 +10,8 @@ interface SnackOfTheWeekCardProps {
 }
 
 export const SnackOfTheWeekCard: React.FC<SnackOfTheWeekCardProps> = ({ snack, loading = false }) => {
+  const [imageError, setImageError] = useState(false);
+
   if (loading) {
     return (
       <div className="bg-gradient-to-r from-amber-500/10 via-amber-400/5 to-amber-500/10 border border-amber-200/60 rounded-2xl p-6 sm:p-8 animate-pulse">
@@ -42,30 +44,47 @@ export const SnackOfTheWeekCard: React.FC<SnackOfTheWeekCardProps> = ({ snack, l
       </div>
 
       <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div className="space-y-3">
-          {/* Badge & Title */}
-          <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-900 text-xs font-bold tracking-wide uppercase">
-            <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-            <span>Snack of the Week</span>
-          </div>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
+          {/* Snack photo thumbnail or badge */}
+          {snack.image_url && !imageError ? (
+            <img
+              src={snack.image_url}
+              alt={snack.name}
+              onError={() => setImageError(true)}
+              className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl object-cover border-2 border-amber-300/80 shadow-md flex-shrink-0"
+            />
+          ) : (
+            <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-amber-100/80 border border-amber-200 flex flex-col items-center justify-center text-amber-700 flex-shrink-0 shadow-sm">
+              <Award className="w-10 h-10 mb-1" />
+              <span className="text-[10px] font-bold uppercase tracking-wider">Top Pick</span>
+            </div>
+          )}
 
-          <div>
-            <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-              {snack.name}
-            </h2>
-            <p className="text-xs text-slate-500 mt-1">
-              Office top pick determined deterministically by highest vote count and inventory availability.
-            </p>
-          </div>
+          <div className="space-y-2">
+            {/* Badge & Title */}
+            <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-900 text-xs font-bold tracking-wide uppercase">
+              <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+              <span>Snack of the Week</span>
+            </div>
 
-          {/* Badges & Meta */}
-          <div className="flex flex-wrap items-center gap-2 pt-1">
-            <CategoryBadge category={snack.category} />
-            <StatusBadge status={snack.status} />
+            <div>
+              <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                {snack.name}
+              </h2>
+              <p className="text-xs text-slate-500 mt-1">
+                Office top pick determined deterministically by highest vote count and inventory availability.
+              </p>
+            </div>
 
-            <div className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">
-              <Heart className="w-3.5 h-3.5 fill-rose-500 text-rose-500" />
-              <span>{snack.votes_count} {snack.votes_count === 1 ? 'vote' : 'votes'}</span>
+            {/* Badges & Meta */}
+            <div className="flex flex-wrap items-center gap-2 pt-1">
+              <CategoryBadge category={snack.category} />
+              <StatusBadge status={snack.status} />
+
+              <div className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">
+                <Heart className="w-3.5 h-3.5 fill-rose-500 text-rose-500" />
+                <span>{snack.votes_count} {snack.votes_count === 1 ? 'vote' : 'votes'}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -79,8 +98,8 @@ export const SnackOfTheWeekCard: React.FC<SnackOfTheWeekCardProps> = ({ snack, l
             <div className="text-2xl font-black text-slate-900 leading-tight">
               {snack.quantity}
             </div>
-            <div className="text-xs text-slate-500 font-medium">
-              Packets remaining (Threshold: {snack.low_stock_threshold})
+            <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+              {snack.quantity === 1 ? 'Packet Left' : 'Packets Left'}
             </div>
           </div>
         </div>

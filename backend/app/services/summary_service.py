@@ -66,6 +66,7 @@ class SummaryService:
                 quantity=snack.quantity,
                 low_stock_threshold=snack.low_stock_threshold,
                 status=snack.status,
+                image_url=snack.image_url,
                 votes_count=vote_count,
                 created_at=snack.created_at,
                 updated_at=snack.updated_at,

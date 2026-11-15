@@ -45,7 +45,7 @@ class ConsumptionService:
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = :snack_id
               AND quantity >= :amount
-            RETURNING id, name, category, quantity, low_stock_threshold, created_at, updated_at;
+            RETURNING id, name, category, quantity, low_stock_threshold, image_url, created_at, updated_at;
         """)
 
         result = db.execute(update_stmt, {"snack_id": snack_id, "amount": amount})
@@ -97,6 +97,7 @@ class ConsumptionService:
             quantity=row.quantity,
             low_stock_threshold=row.low_stock_threshold,
             status=derived_status,
+            image_url=getattr(row, "image_url", None),
             votes_count=votes_count,
             created_at=row.created_at,
             updated_at=row.updated_at,
@@ -125,7 +126,7 @@ class ConsumptionService:
             SET quantity = quantity + :amount,
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = :snack_id
-            RETURNING id, name, category, quantity, low_stock_threshold, created_at, updated_at;
+            RETURNING id, name, category, quantity, low_stock_threshold, image_url, created_at, updated_at;
         """)
 
         result = db.execute(update_stmt, {"snack_id": snack_id, "amount": amount})
@@ -167,6 +168,7 @@ class ConsumptionService:
             quantity=row.quantity,
             low_stock_threshold=row.low_stock_threshold,
             status=derived_status,
+            image_url=getattr(row, "image_url", None),
             votes_count=votes_count,
             created_at=row.created_at,
             updated_at=row.updated_at,

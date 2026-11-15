@@ -133,4 +133,24 @@ export const snackApi = {
     );
     return response.data;
   },
+
+  /**
+   * Upload a snack photo (Administrator only).
+   * Accepts JPEG, PNG, or WebP files up to 5MB.
+   */
+  async uploadImage(file: File): Promise<{ image_url: string }> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await apiClient.post<{ image_url: string }>(
+      '/snacks/upload-image',
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+    return response.data;
+  },
 };

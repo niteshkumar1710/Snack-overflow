@@ -10,6 +10,7 @@ import { DashboardPage } from './pages/DashboardPage';
 import { SnacksPage } from './pages/SnacksPage';
 import { AdminPage } from './pages/AdminPage';
 import { ActivityPage } from './pages/ActivityPage';
+import { MyHistoryPage } from './pages/MyHistoryPage';
 
 export const App: React.FC = () => {
   return (
@@ -25,6 +26,7 @@ export const App: React.FC = () => {
             <Route element={<AppLayout />}>
               <Route path="/" element={<DashboardPage />} />
               <Route path="/snacks" element={<SnacksPage />} />
+              <Route path="/my-history" element={<MyHistoryPage />} />
               <Route
                 path="/admin"
                 element={

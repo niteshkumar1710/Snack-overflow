@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { X, Loader2, AlertCircle, PlusCircle, Edit3 } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { X, Loader2, AlertCircle, PlusCircle, Edit3, Upload, Trash2 } from 'lucide-react';
 import { Snack, SnackCategory, SnackCreateInput, SnackUpdateInput } from '../types';
 import { snackApi } from '../api/snacks';
 import { getErrorMessage } from '../api/client';
@@ -23,8 +23,11 @@ export const AddEditSnackModal: React.FC<AddEditSnackModalProps> = ({
   const [category, setCategory] = useState<SnackCategory>('sweet');
   const [quantity, setQuantity] = useState<number>(10);
   const [threshold, setThreshold] = useState<number>(5);
+  const [imageUrl, setImageUrl] = useState<string>('');
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Initialize form values when modal opens or snack changes
   useEffect(() => {
@@ -34,17 +37,52 @@ export const AddEditSnackModal: React.FC<AddEditSnackModalProps> = ({
         setCategory(snack.category);
         setQuantity(snack.quantity);
         setThreshold(snack.low_stock_threshold);
+        setImageUrl(snack.image_url || '');
       } else {
         setName('');
         setCategory('sweet');
         setQuantity(10);
         setThreshold(5);
+        setImageUrl('');
       }
       setError(null);
     }
   }, [isOpen, mode, snack]);
 
   if (!isOpen) return null;
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Check size on frontend before uploading
+    if (file.size > 5 * 1024 * 1024) {
+      setError('Image file must not exceed 5MB.');
+      return;
+    }
+
+    setUploadingImage(true);
+    setError(null);
+    try {
+      const res = await snackApi.uploadImage(file);
+      setImageUrl(res.image_url);
+    } catch (err: any) {
+      setError(getErrorMessage(err));
+    } finally {
+      setUploadingImage(false);
+      // Reset input value to allow selecting same file again if desired
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setImageUrl('');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,6 +109,7 @@ export const AddEditSnackModal: React.FC<AddEditSnackModalProps> = ({
           category,
           quantity: Number(quantity),
           low_stock_threshold: Number(threshold),
+          image_url: imageUrl.trim() || null,
         };
         const created = await snackApi.createSnack(payload);
         onSuccess(created, 'add');
@@ -80,6 +119,7 @@ export const AddEditSnackModal: React.FC<AddEditSnackModalProps> = ({
           category,
           quantity: Number(quantity),
           low_stock_threshold: Number(threshold),
+          image_url: imageUrl.trim() || null,
         };
         const updated = await snackApi.updateSnack(snack.id, payload);
         onSuccess(updated, 'edit');
@@ -187,6 +227,76 @@ export const AddEditSnackModal: React.FC<AddEditSnackModalProps> = ({
                 className="w-full px-3.5 py-2.5 rounded-xl text-sm border border-slate-300 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-slate-900 transition-colors"
               />
               <span className="text-[10px] text-slate-400">Default: 5</span>
+            </div>
+          </div>
+
+          {/* Optional Snack Image Upload & URL */}
+          <div className="space-y-2 pt-1 border-t border-slate-100">
+            <div className="flex items-center justify-between">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                Snack Photo <span className="text-slate-400 font-normal lowercase">(optional)</span>
+              </label>
+              {imageUrl && (
+                <button
+                  type="button"
+                  onClick={handleRemoveImage}
+                  className="inline-flex items-center space-x-1 text-[11px] font-semibold text-rose-600 hover:text-rose-700"
+                >
+                  <Trash2 className="w-3 h-3" />
+                  <span>Remove Photo</span>
+                </button>
+              )}
+            </div>
+
+            {imageUrl ? (
+              <div className="relative w-full h-32 rounded-xl overflow-hidden border border-slate-200 bg-slate-50 flex items-center justify-center group">
+                <img
+                  src={imageUrl}
+                  alt="Snack preview"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-slate-200 rounded-xl bg-slate-50/50 hover:bg-slate-50 transition-colors">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                  id="snack-image-input"
+                  disabled={uploadingImage}
+                />
+                <label
+                  htmlFor="snack-image-input"
+                  className="cursor-pointer flex flex-col items-center justify-center text-center space-y-1"
+                >
+                  {uploadingImage ? (
+                    <Loader2 className="w-6 h-6 text-amber-600 animate-spin" />
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center">
+                      <Upload className="w-4 h-4" />
+                    </div>
+                  )}
+                  <span className="text-xs font-semibold text-amber-800">
+                    {uploadingImage ? 'Uploading image...' : 'Click to upload photo'}
+                  </span>
+                  <span className="text-[10px] text-slate-400">
+                    JPEG, PNG, or WebP up to 5MB
+                  </span>
+                </label>
+              </div>
+            )}
+
+            {/* Direct Image URL input option */}
+            <div>
+              <input
+                type="url"
+                value={imageUrl}
+                onChange={(e) => setImageUrl(e.target.value)}
+                placeholder="Or paste direct image URL (https://...)"
+                className="w-full px-3 py-1.5 rounded-lg text-xs border border-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-500 text-slate-700 bg-white placeholder:text-slate-400"
+              />
             </div>
           </div>
 

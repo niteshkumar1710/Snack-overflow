@@ -64,6 +64,18 @@ export const Navbar: React.FC = () => {
               <span>Snacks Catalog</span>
             </Link>
 
+            <Link
+              to="/my-history"
+              className={`inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-semibold transition-colors ${
+                isCurrent('/my-history')
+                  ? 'text-amber-800 bg-amber-50 border border-amber-200/80 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              }`}
+            >
+              <History className="w-4 h-4" />
+              <span>My History</span>
+            </Link>
+
             {isAdmin && (
               <>
                 <Link

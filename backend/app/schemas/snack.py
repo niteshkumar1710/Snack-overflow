@@ -9,6 +9,7 @@ class SnackBase(BaseModel):
     category: str = Field(..., description="Category: sweet, savoury, drink, healthy-ish")
     quantity: int = Field(default=0, ge=0, description="Available stock quantity (must be >= 0)")
     low_stock_threshold: int = Field(default=5, ge=0, description="Low stock threshold (must be >= 0)")
+    image_url: Optional[str] = Field(default=None, description="Optional public URL of snack photo")
 
     @field_validator("name")
     @classmethod
@@ -39,6 +40,7 @@ class SnackUpdate(BaseModel):
     category: Optional[str] = None
     quantity: Optional[int] = Field(None, ge=0)
     low_stock_threshold: Optional[int] = Field(None, ge=0)
+    image_url: Optional[str] = None
 
     @field_validator("name")
     @classmethod
@@ -70,6 +72,7 @@ class SnackResponse(BaseModel):
     quantity: int
     low_stock_threshold: int
     status: str
+    image_url: Optional[str] = None
     votes_count: int = 0
     user_has_voted: bool = False
     created_at: datetime
