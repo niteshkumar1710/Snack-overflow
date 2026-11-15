@@ -420,3 +420,69 @@ pytest tests/test_concurrency.py -v
 - [x] **Strict Input Validation**: Request schemas validated via Pydantic v2 (regex sanitization, length boundaries, enum constraints).
 - [x] **No Leaked Secrets**: Password hashes, JWT secrets, and database credentials excluded from responses and committed code.
 - [x] **CORS Configuration**: Restricts browser requests to authorized frontend origins.
+
+---
+
+## 12. Advanced Production Features
+
+### A. Idempotency-Key Support (Network Retry Safety)
+Distributed pantry systems often encounter transient network timeouts where a client is unsure if a request succeeded. Resending the request could accidentally consume multiple snacks or double-restock inventory.
+
+- **Header**: `Idempotency-Key: <UUID>` on `POST /snacks/{id}/consume` and `POST /snacks/{id}/restock`.
+- **Database Schema**: `idempotency_keys` table with unique constraint `uq_user_idempotency_key (user_id, key)`.
+- **Request Fingerprinting**: Computes a SHA-256 hash of `METHOD:PATH:PAYLOAD`. Reusing the same key with a different payload returns `HTTP 409 Conflict (IDEMPOTENCY_KEY_PAYLOAD_MISMATCH)`.
+- **Atomic Caching**: Successful responses are stored in PostgreSQL. Subsequent identical retries return the cached JSON response and HTTP status immediately without re-executing stock decrement logic or inserting duplicate activity logs.
+- **Expiration Policy**: Idempotency records expire after 24 hours.
+
+### B. Real-Time Stock Updates (WebSockets)
+Pantry inventory updates instantly on all connected devices without manual page refreshes:
+
+- **Endpoint**: `GET /ws/pantry?token=<JWT>` (upgrades to WebSocket).
+- **Authentication**: JWT token validated on handshake; unauthenticated connections are closed with code `1008 (Policy Violation)`.
+- **Transaction Safety**: Stock events are broadcast **only after** the database transaction successfully commits. If consumption fails (e.g. 409 Insufficient Stock), no broadcast is emitted.
+- **Payload Event Structure**:
+  ```json
+  {
+    "type": "STOCK_UPDATED",
+    "event": "consumed",
+    "snack_id": 4,
+    "snack_name": "Lays",
+    "quantity": 8,
+    "low_stock_threshold": 3,
+    "status": "stocked",
+    "amount": 1,
+    "user_id": 2
+  }
+  ```
+- **Connection Management & Horizontal Scaling**:
+  - The current single-instance deployment uses an in-memory `ConnectionManager` with periodic keepalive pings (`25s`) to prevent proxy timeouts.
+  - For horizontal scaling across multiple Render instances, a shared pub/sub broker (e.g., Redis via Upstash or Render Redis) can be plugged into `ConnectionManager.broadcast` to fan out events across all nodes.
+
+### C. Optimistic UI with Authoritative Rollback
+- **Instant Response**: Clicking **"Take Snack"** decrements displayed quantity and recalculates status badges (`stocked`, `running_low`, `gone`) immediately in React state.
+- **Multi-Click Prevention**: The button is locked during transit for that specific snack ID.
+- **Authoritative Reconciliation**: Replaces optimistic values with server-verified data upon response.
+- **Rollback Guarantee**: If the backend rejects the request (network disconnect or 409 Insufficient Stock), the UI rolls back to the exact previous snapshot and resynchronizes.
+
+---
+
+## 13. Production Deployment Guide (Vercel + Render + Supabase)
+
+### Backend Deployment (Render)
+1. **Root Directory**: `backend`
+2. **Build Command**: `pip install -r requirements.txt`
+3. **Start Command**: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+4. **Environment Variables**:
+   - `DATABASE_URL`: Supabase Transaction Pooler URL (`postgresql://postgres.<REF>:<PASSWORD>@aws-1-ap-south-1.pooler.supabase.com:6543/postgres`)
+   - `ENVIRONMENT`: `production`
+   - `JWT_SECRET_KEY`: High-entropy 32+ character secret
+   - `CORS_ORIGINS`: `http://localhost:5173,https://<your-vercel-domain>.vercel.app`
+
+### Frontend Deployment (Vercel)
+1. **Root Directory**: `frontend`
+2. **Framework Preset**: `Vite`
+3. **Build Command**: `npm run build`
+4. **Output Directory**: `dist`
+5. **Environment Variables**:
+   - `VITE_API_BASE_URL`: `https://<your-render-backend>.onrender.com`
+6. **SPA Routing**: Handled via `frontend/vercel.json` rewrites to prevent 404s on direct URL navigation.
