@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import List
 from pydantic import BaseModel, Field, ConfigDict
 from app.schemas.snack import SnackResponse
 
@@ -37,3 +38,45 @@ class RestockResponse(BaseModel):
     message: str
     snack: SnackResponse
     activity: ActivityResponse
+
+
+class ActivityUserResponse(BaseModel):
+    """Minimal user information embedded in an activity record."""
+    id: int
+    name: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ActivitySnackResponse(BaseModel):
+    """Minimal snack information embedded in an activity record."""
+    id: int
+    name: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ActivityItemResponse(BaseModel):
+    """Detailed activity entry with associated user and snack."""
+    id: int
+    user: ActivityUserResponse
+    snack: ActivitySnackResponse
+    action: str
+    amount: int
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ActivityPaginationMeta(BaseModel):
+    """Pagination metadata for activity queries."""
+    page: int
+    limit: int
+    total: int
+    total_pages: int
+
+
+class PaginatedActivitiesResponse(BaseModel):
+    """Response model for paginated activity log."""
+    items: List[ActivityItemResponse]
+    pagination: ActivityPaginationMeta

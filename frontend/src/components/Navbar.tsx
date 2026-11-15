@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Coffee, LogOut, Shield, User as UserIcon, LayoutDashboard, Cookie } from 'lucide-react';
+import { Coffee, LogOut, Shield, User as UserIcon, LayoutDashboard, Cookie, History } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export const Navbar: React.FC = () => {
@@ -65,17 +65,31 @@ export const Navbar: React.FC = () => {
             </Link>
 
             {isAdmin && (
-              <Link
-                to="/admin"
-                className={`inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-semibold transition-colors ${
-                  isCurrent('/admin')
-                    ? 'text-purple-800 bg-purple-50 border border-purple-200/80 shadow-xs'
-                    : 'text-purple-700 hover:text-purple-900 hover:bg-purple-50'
-                }`}
-              >
-                <Shield className="w-4 h-4 text-purple-600" />
-                <span>Admin Portal</span>
-              </Link>
+              <>
+                <Link
+                  to="/admin"
+                  className={`inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-semibold transition-colors ${
+                    isCurrent('/admin') && !isCurrent('/activities')
+                      ? 'text-purple-800 bg-purple-50 border border-purple-200/80 shadow-xs'
+                      : 'text-purple-700 hover:text-purple-900 hover:bg-purple-50'
+                  }`}
+                >
+                  <Shield className="w-4 h-4 text-purple-600" />
+                  <span>Admin Portal</span>
+                </Link>
+
+                <Link
+                  to="/activities"
+                  className={`inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-semibold transition-colors ${
+                    isCurrent('/activities')
+                      ? 'text-purple-800 bg-purple-50 border border-purple-200/80 shadow-xs'
+                      : 'text-purple-700 hover:text-purple-900 hover:bg-purple-50'
+                  }`}
+                >
+                  <History className="w-4 h-4 text-purple-600" />
+                  <span>Activity Log</span>
+                </Link>
+              </>
             )}
           </nav>
         </div>

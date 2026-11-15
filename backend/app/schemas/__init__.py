@@ -13,6 +13,11 @@ from app.schemas.activity import (
     ActivityResponse,
     ConsumptionResponse,
     RestockResponse,
+    ActivityUserResponse,
+    ActivitySnackResponse,
+    ActivityItemResponse,
+    ActivityPaginationMeta,
+    PaginatedActivitiesResponse,
 )
 from app.schemas.vote import VoteResponse
 from app.schemas.summary import PantrySummaryResponse
@@ -34,6 +39,11 @@ __all__ = [
     "ActivityResponse",
     "ConsumptionResponse",
     "RestockResponse",
+    "ActivityUserResponse",
+    "ActivitySnackResponse",
+    "ActivityItemResponse",
+    "ActivityPaginationMeta",
+    "PaginatedActivitiesResponse",
     "VoteResponse",
     "PantrySummaryResponse",
 ]

@@ -59,6 +59,37 @@ export interface Activity {
   created_at: string;
 }
 
+export interface ActivityUserSummary {
+  id: number;
+  name: string;
+}
+
+export interface ActivitySnackSummary {
+  id: number;
+  name: string;
+}
+
+export interface ActivityItem {
+  id: number;
+  user: ActivityUserSummary;
+  snack: ActivitySnackSummary;
+  action: 'consumed' | 'restocked';
+  amount: number;
+  created_at: string;
+}
+
+export interface ActivityPaginationMeta {
+  page: number;
+  limit: number;
+  total: number;
+  total_pages: number;
+}
+
+export interface PaginatedActivities {
+  items: ActivityItem[];
+  pagination: ActivityPaginationMeta;
+}
+
 export interface ConsumptionResponse {
   message: string;
   snack: Snack;

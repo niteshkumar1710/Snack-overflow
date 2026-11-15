@@ -9,6 +9,7 @@ import { SignupPage } from './pages/SignupPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { SnacksPage } from './pages/SnacksPage';
 import { AdminPage } from './pages/AdminPage';
+import { ActivityPage } from './pages/ActivityPage';
 
 export const App: React.FC = () => {
   return (
@@ -29,6 +30,14 @@ export const App: React.FC = () => {
                 element={
                   <AdminRoute>
                     <AdminPage />
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/activities"
+                element={
+                  <AdminRoute>
+                    <ActivityPage />
                   </AdminRoute>
                 }
               />
