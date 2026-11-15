@@ -5,6 +5,7 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { AdminRoute } from './components/AdminRoute';
 import { AppLayout } from './layouts/AppLayout';
 import { LoginPage } from './pages/LoginPage';
+import { SignupPage } from './pages/SignupPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { SnacksPage } from './pages/SnacksPage';
 import { AdminPage } from './pages/AdminPage';
@@ -14,8 +15,9 @@ export const App: React.FC = () => {
     <BrowserRouter>
       <AuthProvider>
         <Routes>
-          {/* Public Route: Login */}
+          {/* Public Routes */}
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignupPage />} />
 
           {/* Protected Routes inside AppLayout */}
           <Route element={<ProtectedRoute />}>

@@ -1,4 +1,4 @@
-from app.schemas.user import UserBase, UserCreate, UserResponse
+from app.schemas.user import UserBase, UserCreate, UserRegisterRequest, UserResponse
 from app.schemas.auth import LoginRequest, TokenResponse
 from app.schemas.snack import (
     SnackBase,
@@ -20,6 +20,7 @@ from app.schemas.summary import PantrySummaryResponse
 __all__ = [
     "UserBase",
     "UserCreate",
+    "UserRegisterRequest",
     "UserResponse",
     "LoginRequest",
     "TokenResponse",

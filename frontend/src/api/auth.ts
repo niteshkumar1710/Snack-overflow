@@ -1,7 +1,15 @@
 import { apiClient } from './client';
-import { LoginCredentials, TokenResponse, User } from '../types';
+import { LoginCredentials, RegisterPayload, TokenResponse, User } from '../types';
 
 export const authApi = {
+  /**
+   * Register a new member account.
+   */
+  async register(payload: RegisterPayload): Promise<User> {
+    const response = await apiClient.post<User>('/auth/register', payload);
+    return response.data;
+  },
+
   /**
    * Authenticate user credentials and receive access token.
    */

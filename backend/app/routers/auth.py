@@ -1,14 +1,32 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from app.core.dependencies import get_current_user, require_admin
 from app.database.connection import get_db
 from app.models.user import User
 from app.schemas.auth import LoginRequest, TokenResponse
-from app.schemas.user import UserResponse
+from app.schemas.user import UserRegisterRequest, UserResponse
 from app.services.auth_service import auth_service
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
+
+
+@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+def register(
+    payload: UserRegisterRequest,
+    db: Session = Depends(get_db),
+) -> UserResponse:
+    """Public registration endpoint for new pantry members.
+
+    Security:
+    - Automatically assigns role='member'.
+    - Validates password strength (min 8 characters).
+    - Hashes password using bcrypt.
+    - Rejects duplicate emails with HTTP 409 Conflict.
+    - Never leaks password hashes in the response.
+    """
+    user = auth_service.register_user(db=db, payload=payload)
+    return UserResponse.model_validate(user)
 
 
 @router.post("/login", response_model=TokenResponse)
