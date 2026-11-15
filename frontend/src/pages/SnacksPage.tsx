@@ -14,6 +14,7 @@ import { SnackCard } from '../components/SnackCard';
 import { FilterBar } from '../components/FilterBar';
 import { Pagination } from '../components/Pagination';
 import { usePantryWebSocket } from '../hooks/usePantryWebSocket';
+import { calculateSnackStatus } from '../utils/snackUtils';
 
 interface AlertNotification {
   type: 'success' | 'conflict' | 'error';
@@ -113,13 +114,43 @@ export const SnacksPage: React.FC = () => {
     setPage(1);
   };
 
-  // Consume action with concurrency conflict detection (HTTP 409)
+  // Consume action with Optimistic UI, Idempotency-Key, and safe error rollback
   const handleConsume = async (snackId: number) => {
+    // 1. Prevent accidental duplicate clicks
+    if (consumingId === snackId) {
+      return;
+    }
+
+    const currentSnack = snacks.find((s) => s.id === snackId);
+    if (!currentSnack || currentSnack.quantity <= 0) {
+      return;
+    }
+
+    // Save previous snapshot for rollback if network/server rejects
+    const previousSnapshot = { ...currentSnack };
+    const optimisticQty = Math.max(0, currentSnack.quantity - 1);
+    const optimisticStatus = calculateSnackStatus(optimisticQty, currentSnack.low_stock_threshold);
+
+    // 2. Optimistic UI update: immediately decrement displayed count
+    setSnacks((prev) =>
+      prev.map((s) =>
+        s.id === snackId
+          ? { ...s, quantity: optimisticQty, status: optimisticStatus }
+          : s
+      )
+    );
+
     setConsumingId(snackId);
     setNotification(null);
+
+    // 3. Generate unique Idempotency-Key for this specific user action
+    const idempotencyKey = crypto.randomUUID();
+
     try {
-      const response = await snackApi.consumeSnack(snackId, 1);
-      // Update local state with the returned updated snack
+      // 4. Send request with Idempotency-Key
+      const response = await snackApi.consumeSnack(snackId, 1, idempotencyKey);
+
+      // 5. Reconcile optimistic state with the server's canonical response
       setSnacks((prev) =>
         prev.map((s) => (s.id === snackId ? { ...s, ...response.snack } : s))
       );
@@ -128,22 +159,29 @@ export const SnacksPage: React.FC = () => {
         title: 'Enjoy Your Snack!',
         message: response.message,
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
+      // 6. Rollback optimistic change on failure
+      setSnacks((prev) =>
+        prev.map((s) => (s.id === snackId ? previousSnapshot : s))
+      );
+
+      const axiosErr = err as { response?: { status?: number; data?: { error?: { message?: string } } } };
       const errorMsg = getErrorMessage(err);
-      if (err?.response?.status === 409) {
-        // Concurrency conflict: someone took the last packet or stock was depleted
+
+      if (axiosErr.response?.status === 409) {
+        // Concurrency conflict (someone beat you to it or stock was depleted)
         setNotification({
           type: 'conflict',
           title: 'Concurrency Conflict Detected',
           message: errorMsg || 'Someone beat you to the last packet!',
         });
-        // Immediately refresh the current page to synchronize live inventory
+        // Resync latest authoritative inventory from server
         loadSnacks();
       } else {
         setNotification({
           type: 'error',
           title: 'Consumption Failed',
-          message: errorMsg,
+          message: errorMsg || 'Network error occurred. Your stock was rolled back.',
         });
       }
     } finally {
