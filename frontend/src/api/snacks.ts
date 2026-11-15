@@ -51,11 +51,23 @@ export const snackApi = {
    * Atomically consume a snack packet.
    * Decrements stock and logs a consumed activity record in one database transaction.
    * Rejection with HTTP 409 Conflict triggers "Someone beat you to the last packet!".
+   * Accepts optional idempotencyKey to prevent duplicate consumption on network retries.
    */
-  async consumeSnack(snackId: number, amount: number = 1): Promise<ConsumptionResponse> {
-    const response = await apiClient.post<ConsumptionResponse>(`/snacks/${snackId}/consume`, {
-      amount,
-    });
+  async consumeSnack(
+    snackId: number,
+    amount: number = 1,
+    idempotencyKey?: string
+  ): Promise<ConsumptionResponse> {
+    const headers: Record<string, string> = {};
+    if (idempotencyKey) {
+      headers['Idempotency-Key'] = idempotencyKey;
+    }
+
+    const response = await apiClient.post<ConsumptionResponse>(
+      `/snacks/${snackId}/consume`,
+      { amount },
+      { headers }
+    );
     return response.data;
   },
 
@@ -102,11 +114,23 @@ export const snackApi = {
 
   /**
    * Restock a snack with positive amount and log restocked activity (Administrator only).
+   * Accepts optional idempotencyKey to prevent duplicate restocking on network retries.
    */
-  async restockSnack(snackId: number, amount: number): Promise<RestockResponse> {
-    const response = await apiClient.post<RestockResponse>(`/snacks/${snackId}/restock`, {
-      amount,
-    });
+  async restockSnack(
+    snackId: number,
+    amount: number,
+    idempotencyKey?: string
+  ): Promise<RestockResponse> {
+    const headers: Record<string, string> = {};
+    if (idempotencyKey) {
+      headers['Idempotency-Key'] = idempotencyKey;
+    }
+
+    const response = await apiClient.post<RestockResponse>(
+      `/snacks/${snackId}/restock`,
+      { amount },
+      { headers }
+    );
     return response.data;
   },
 };

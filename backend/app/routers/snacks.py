@@ -1,5 +1,5 @@
 from typing import Optional
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, Header, status
 from sqlalchemy.orm import Session
 
 from app.core.dependencies import get_current_user, require_admin
@@ -23,6 +23,7 @@ from app.services.snack_service import snack_service
 from app.services.consumption_service import consumption_service
 from app.services.voting_service import voting_service
 from app.services.summary_service import summary_service
+from app.services.idempotency_service import IdempotencyService
 
 router = APIRouter(prefix="/snacks", tags=["Snacks"])
 
@@ -114,42 +115,112 @@ def delete_snack(
 def consume_snack(
     snack_id: int,
     payload: ConsumeRequest = ConsumeRequest(amount=1),
+    idempotency_key: Optional[str] = Header(None, alias="Idempotency-Key"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> ConsumptionResponse:
-    """Atomically consume one or more packets of a snack using database-level conditional updates."""
-    snack_resp, activity_resp = consumption_service.consume_snack(
-        db=db,
-        snack_id=snack_id,
-        user=current_user,
-        amount=payload.amount,
-    )
-    return ConsumptionResponse(
-        message=f"Successfully consumed {payload.amount} packet(s) of '{snack_resp.name}'.",
-        snack=snack_resp,
-        activity=activity_resp,
-    )
+    """Atomically consume one or more packets of a snack using database-level conditional updates.
+
+    Supports optional Idempotency-Key header to prevent duplicate execution across retries.
+    """
+    idemp_record = None
+    if idempotency_key:
+        fingerprint = IdempotencyService.generate_fingerprint(
+            method="POST",
+            path=f"/snacks/{snack_id}/consume",
+            payload={"amount": payload.amount},
+        )
+        idemp_record, cached_response = IdempotencyService.start_operation(
+            db=db,
+            user_id=current_user.id,
+            key=idempotency_key,
+            fingerprint=fingerprint,
+        )
+        if cached_response is not None:
+            return ConsumptionResponse(**cached_response)
+
+    try:
+        snack_resp, activity_resp = consumption_service.consume_snack(
+            db=db,
+            snack_id=snack_id,
+            user=current_user,
+            amount=payload.amount,
+        )
+        response_obj = ConsumptionResponse(
+            message=f"Successfully consumed {payload.amount} packet(s) of '{snack_resp.name}'.",
+            snack=snack_resp,
+            activity=activity_resp,
+        )
+
+        if idemp_record:
+            IdempotencyService.complete_operation(
+                db=db,
+                record_id=idemp_record.id,
+                status_code=200,
+                response_data=response_obj.model_dump(mode="json"),
+            )
+
+        return response_obj
+    except Exception:
+        if idemp_record:
+            IdempotencyService.fail_operation(db=db, record_id=idemp_record.id)
+        raise
 
 
 @router.post("/{snack_id}/restock", response_model=RestockResponse)
 def restock_snack(
     snack_id: int,
     payload: RestockRequest,
+    idempotency_key: Optional[str] = Header(None, alias="Idempotency-Key"),
     admin: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ) -> RestockResponse:
-    """Restock snack quantity and log the restocked activity (Administrator only)."""
-    snack_resp, activity_resp = consumption_service.restock_snack(
-        db=db,
-        snack_id=snack_id,
-        admin=admin,
-        amount=payload.amount,
-    )
-    return RestockResponse(
-        message=f"Successfully restocked {payload.amount} packet(s) of '{snack_resp.name}'.",
-        snack=snack_resp,
-        activity=activity_resp,
-    )
+    """Restock snack quantity and log the restocked activity (Administrator only).
+
+    Supports optional Idempotency-Key header to prevent duplicate execution across retries.
+    """
+    idemp_record = None
+    if idempotency_key:
+        fingerprint = IdempotencyService.generate_fingerprint(
+            method="POST",
+            path=f"/snacks/{snack_id}/restock",
+            payload={"amount": payload.amount},
+        )
+        idemp_record, cached_response = IdempotencyService.start_operation(
+            db=db,
+            user_id=admin.id,
+            key=idempotency_key,
+            fingerprint=fingerprint,
+        )
+        if cached_response is not None:
+            return RestockResponse(**cached_response)
+
+    try:
+        snack_resp, activity_resp = consumption_service.restock_snack(
+            db=db,
+            snack_id=snack_id,
+            admin=admin,
+            amount=payload.amount,
+        )
+        response_obj = RestockResponse(
+            message=f"Successfully restocked {payload.amount} packet(s) of '{snack_resp.name}'.",
+            snack=snack_resp,
+            activity=activity_resp,
+        )
+
+        if idemp_record:
+            IdempotencyService.complete_operation(
+                db=db,
+                record_id=idemp_record.id,
+                status_code=200,
+                response_data=response_obj.model_dump(mode="json"),
+            )
+
+        return response_obj
+    except Exception:
+        if idemp_record:
+            IdempotencyService.fail_operation(db=db, record_id=idemp_record.id)
+        raise
 
 
 @router.post("/{snack_id}/vote", response_model=VoteResponse)

@@ -7,6 +7,7 @@ from app.database.base import Base
 if TYPE_CHECKING:
     from app.models.vote import Vote
     from app.models.activity import Activity
+    from app.models.idempotency import IdempotencyRecord
 
 
 class User(Base):
@@ -37,6 +38,12 @@ class User(Base):
     )
     activities: Mapped[List["Activity"]] = relationship(
         "Activity",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    idempotency_records: Mapped[List["IdempotencyRecord"]] = relationship(
+        "IdempotencyRecord",
         back_populates="user",
         cascade="all, delete-orphan",
         passive_deletes=True,
