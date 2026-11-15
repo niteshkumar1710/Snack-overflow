@@ -7,7 +7,6 @@ import {
   Search,
   X,
   RotateCcw,
-  CheckCircle,
   AlertTriangle,
   Heart,
   Package,
@@ -22,13 +21,10 @@ import { AddEditSnackModal } from '../components/AddEditSnackModal';
 import { RestockModal } from '../components/RestockModal';
 import { DeleteConfirmModal } from '../components/DeleteConfirmModal';
 import { usePantryWebSocket } from '../hooks/usePantryWebSocket';
-
-interface AlertNotification {
-  type: 'success' | 'error';
-  message: string;
-}
+import { useNotification } from '../context/NotificationContext';
 
 export const AdminPage: React.FC = () => {
+  const { showSuccess, showError } = useNotification();
   const [snacks, setSnacks] = useState<Snack[]>([]);
   const [total, setTotal] = useState<number>(0);
   const [totalPages, setTotalPages] = useState<number>(1);
@@ -42,7 +38,6 @@ export const AdminPage: React.FC = () => {
 
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [notification, setNotification] = useState<AlertNotification | null>(null);
 
   // Modals state
   const [isAddEditOpen, setIsAddEditOpen] = useState(false);
@@ -60,14 +55,6 @@ export const AdminPage: React.FC = () => {
     }, 350);
     return () => clearTimeout(handler);
   }, [search]);
-
-  // Auto-dismiss notification after 5s
-  useEffect(() => {
-    if (notification) {
-      const timer = setTimeout(() => setNotification(null), 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [notification]);
 
   const loadSnacks = useCallback(async () => {
     setLoading(true);
@@ -137,25 +124,16 @@ export const AdminPage: React.FC = () => {
 
   const handleAddEditSuccess = (savedSnack: Snack, mode: 'add' | 'edit') => {
     if (mode === 'add') {
-      setNotification({
-        type: 'success',
-        message: `Successfully created snack '${savedSnack.name}' with ${savedSnack.quantity} initial packets.`,
-      });
+      showSuccess(`Successfully created snack '${savedSnack.name}' with ${savedSnack.quantity} initial packets.`, 'Snack Created');
       loadSnacks();
     } else {
-      setNotification({
-        type: 'success',
-        message: `Updated snack '${savedSnack.name}'.`,
-      });
+      showSuccess(`Updated snack '${savedSnack.name}'.`, 'Snack Updated');
       setSnacks((prev) => prev.map((s) => (s.id === savedSnack.id ? savedSnack : s)));
     }
   };
 
   const handleRestockSuccess = (response: RestockResponse) => {
-    setNotification({
-      type: 'success',
-      message: response.message,
-    });
+    showSuccess(response.message, 'Restock Confirmed');
     setSnacks((prev) =>
       prev.map((s) => (s.id === response.snack.id ? response.snack : s))
     );
@@ -164,16 +142,10 @@ export const AdminPage: React.FC = () => {
   const handleDeleteConfirm = async (snackId: number) => {
     try {
       const res = await snackApi.deleteSnack(snackId);
-      setNotification({
-        type: 'success',
-        message: res.message || 'Snack was deleted successfully.',
-      });
+      showSuccess(res.message || 'Snack was deleted successfully.', 'Snack Deleted');
       loadSnacks();
     } catch (err: any) {
-      setNotification({
-        type: 'error',
-        message: getErrorMessage(err),
-      });
+      showError(getErrorMessage(err), 'Deletion Failed');
     }
   };
 
@@ -211,32 +183,6 @@ export const AdminPage: React.FC = () => {
           <span>Add New Snack</span>
         </button>
       </div>
-
-      {/* Floating Notification Toast */}
-      {notification && (
-        <div
-          className={`p-4 rounded-2xl border shadow-lg flex items-center justify-between gap-3 animate-in fade-in slide-in-from-top-2 duration-300 ${
-            notification.type === 'success'
-              ? 'bg-emerald-50 border-emerald-300 text-emerald-900'
-              : 'bg-rose-50 border-rose-300 text-rose-900'
-          }`}
-        >
-          <div className="flex items-center space-x-3">
-            {notification.type === 'success' ? (
-              <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0" />
-            ) : (
-              <AlertTriangle className="w-5 h-5 text-rose-600 flex-shrink-0" />
-            )}
-            <p className="text-sm font-semibold">{notification.message}</p>
-          </div>
-          <button
-            onClick={() => setNotification(null)}
-            className="text-slate-400 hover:text-slate-600 p-1"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-      )}
 
       {/* Search & Filters */}
       <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-col md:flex-row items-stretch md:items-center gap-3">

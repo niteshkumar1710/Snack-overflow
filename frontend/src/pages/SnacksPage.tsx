@@ -3,8 +3,6 @@ import {
   PackageOpen,
   RotateCcw,
   AlertTriangle,
-  CheckCircle,
-  X,
   Sparkles,
 } from 'lucide-react';
 import { snackApi } from '../api/snacks';
@@ -15,14 +13,10 @@ import { FilterBar } from '../components/FilterBar';
 import { Pagination } from '../components/Pagination';
 import { usePantryWebSocket } from '../hooks/usePantryWebSocket';
 import { calculateSnackStatus } from '../utils/snackUtils';
-
-interface AlertNotification {
-  type: 'success' | 'conflict' | 'error';
-  title?: string;
-  message: string;
-}
+import { useNotification } from '../context/NotificationContext';
 
 export const SnacksPage: React.FC = () => {
+  const { showSuccess, showError, showWarning } = useNotification();
   const [snacks, setSnacks] = useState<Snack[]>([]);
   const [total, setTotal] = useState<number>(0);
   const [totalPages, setTotalPages] = useState<number>(1);
@@ -39,7 +33,6 @@ export const SnacksPage: React.FC = () => {
 
   const [consumingId, setConsumingId] = useState<number | null>(null);
   const [votingId, setVotingId] = useState<number | null>(null);
-  const [notification, setNotification] = useState<AlertNotification | null>(null);
 
   // Debounce search typing
   useEffect(() => {
@@ -50,16 +43,6 @@ export const SnacksPage: React.FC = () => {
 
     return () => clearTimeout(handler);
   }, [search]);
-
-  // Auto-dismiss notifications after 5 seconds
-  useEffect(() => {
-    if (notification) {
-      const timer = setTimeout(() => {
-        setNotification(null);
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [notification]);
 
   // Load snacks from server
   const loadSnacks = useCallback(async () => {
@@ -105,7 +88,6 @@ export const SnacksPage: React.FC = () => {
     }, [])
   );
 
-  // Handler for reset filters
   const handleResetFilters = () => {
     setSearch('');
     setDebouncedSearch('');
@@ -141,7 +123,6 @@ export const SnacksPage: React.FC = () => {
     );
 
     setConsumingId(snackId);
-    setNotification(null);
 
     // 3. Generate unique Idempotency-Key for this specific user action
     const idempotencyKey = crypto.randomUUID();
@@ -154,11 +135,9 @@ export const SnacksPage: React.FC = () => {
       setSnacks((prev) =>
         prev.map((s) => (s.id === snackId ? { ...s, ...response.snack } : s))
       );
-      setNotification({
-        type: 'success',
-        title: 'Enjoy Your Snack!',
-        message: response.message,
-      });
+
+      // Display centered dialog popup without shifting layout
+      showSuccess(response.message || 'Snack consumed successfully!', 'Enjoy Your Snack!');
     } catch (err: unknown) {
       // 6. Rollback optimistic change on failure
       setSnacks((prev) =>
@@ -170,19 +149,17 @@ export const SnacksPage: React.FC = () => {
 
       if (axiosErr.response?.status === 409) {
         // Concurrency conflict (someone beat you to it or stock was depleted)
-        setNotification({
-          type: 'conflict',
-          title: 'Concurrency Conflict Detected',
-          message: errorMsg || 'Someone beat you to the last packet!',
-        });
+        showWarning(
+          errorMsg || 'Someone beat you to the last packet!',
+          'Concurrency Conflict'
+        );
         // Resync latest authoritative inventory from server
         loadSnacks();
       } else {
-        setNotification({
-          type: 'error',
-          title: 'Consumption Failed',
-          message: errorMsg || 'Network error occurred. Your stock was rolled back.',
-        });
+        showError(
+          errorMsg || 'Unable to consume this snack. Please try again.',
+          'Consumption Failed'
+        );
       }
     } finally {
       setConsumingId(null);
@@ -192,7 +169,6 @@ export const SnacksPage: React.FC = () => {
   // Vote / Unvote action
   const handleVoteToggle = async (snackId: number, currentlyVoted: boolean) => {
     setVotingId(snackId);
-    setNotification(null);
     try {
       if (currentlyVoted) {
         // Retract vote
@@ -204,10 +180,7 @@ export const SnacksPage: React.FC = () => {
               : s
           )
         );
-        setNotification({
-          type: 'success',
-          message: 'Your vote was removed successfully.',
-        });
+        showSuccess('Your vote was removed successfully.', 'Vote Retracted');
       } else {
         // Cast vote
         const response = await snackApi.voteSnack(snackId);
@@ -218,11 +191,7 @@ export const SnacksPage: React.FC = () => {
               : s
           )
         );
-        setNotification({
-          type: 'success',
-          title: 'Vote Recorded!',
-          message: 'Thank you for supporting your favorite office snack!',
-        });
+        showSuccess('Thank you for supporting your favorite office snack!', 'Vote Recorded!');
       }
     } catch (err: any) {
       const errorMsg = getErrorMessage(err);
@@ -231,17 +200,9 @@ export const SnacksPage: React.FC = () => {
         setSnacks((prev) =>
           prev.map((s) => (s.id === snackId ? { ...s, user_has_voted: true } : s))
         );
-        setNotification({
-          type: 'conflict',
-          title: 'Vote Conflict',
-          message: errorMsg,
-        });
+        showWarning(errorMsg, 'Vote Conflict');
       } else {
-        setNotification({
-          type: 'error',
-          title: 'Voting Failed',
-          message: errorMsg,
-        });
+        showError(errorMsg, 'Voting Failed');
       }
     } finally {
       setVotingId(null);
@@ -253,55 +214,19 @@ export const SnacksPage: React.FC = () => {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
             Pantry Snack Catalog
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
             Browse available treats, vote for your favorites, and reserve snacks with live stock updates.
           </p>
         </div>
 
-        <div className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs font-semibold self-start sm:self-auto">
+        <div className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs font-bold self-start sm:self-auto">
           <Sparkles className="w-3.5 h-3.5 text-amber-600" />
           <span>{total} Snacks Available</span>
         </div>
       </div>
-
-      {/* Floating Notification Toast */}
-      {notification && (
-        <div
-          className={`p-4 rounded-2xl border shadow-lg flex items-start justify-between gap-3 animate-in fade-in slide-in-from-top-2 duration-300 ${
-            notification.type === 'conflict'
-              ? 'bg-amber-50 border-amber-300 text-amber-900 ring-2 ring-amber-400/30'
-              : notification.type === 'success'
-              ? 'bg-emerald-50 border-emerald-300 text-emerald-900'
-              : 'bg-rose-50 border-rose-300 text-rose-900'
-          }`}
-        >
-          <div className="flex items-start space-x-3">
-            {notification.type === 'conflict' ? (
-              <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-            ) : notification.type === 'success' ? (
-              <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
-            ) : (
-              <AlertTriangle className="w-5 h-5 text-rose-600 flex-shrink-0 mt-0.5" />
-            )}
-            <div>
-              {notification.title && (
-                <p className="text-xs font-bold uppercase tracking-wider">{notification.title}</p>
-              )}
-              <p className="text-sm font-semibold mt-0.5">{notification.message}</p>
-            </div>
-          </div>
-
-          <button
-            onClick={() => setNotification(null)}
-            className="text-slate-400 hover:text-slate-600 p-1"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-      )}
 
       {/* Search & Filter Bar */}
       <FilterBar
@@ -322,16 +247,13 @@ export const SnacksPage: React.FC = () => {
 
       {/* Loading Skeleton */}
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <div
               key={i}
               className="bg-white rounded-2xl border border-slate-200 p-6 space-y-4 animate-pulse"
             >
-              <div className="flex justify-between">
-                <div className="h-5 w-20 bg-slate-200 rounded" />
-                <div className="h-5 w-20 bg-slate-200 rounded" />
-              </div>
+              <div className="h-40 w-full bg-slate-200 rounded-xl" />
               <div className="h-6 w-3/4 bg-slate-200 rounded" />
               <div className="h-4 w-1/2 bg-slate-100 rounded" />
               <div className="h-2 w-full bg-slate-100 rounded" />
@@ -341,7 +263,7 @@ export const SnacksPage: React.FC = () => {
         </div>
       ) : error ? (
         /* Error State */
-        <div className="bg-white border border-rose-200 rounded-2xl p-12 text-center space-y-3">
+        <div className="bg-white border border-rose-200 rounded-2xl p-8 sm:p-12 text-center space-y-3">
           <div className="w-12 h-12 rounded-full bg-rose-50 text-rose-500 mx-auto flex items-center justify-center">
             <AlertTriangle className="w-6 h-6" />
           </div>
@@ -349,7 +271,7 @@ export const SnacksPage: React.FC = () => {
           <p className="text-xs text-rose-600 max-w-sm mx-auto">{error}</p>
           <button
             onClick={loadSnacks}
-            className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-slate-900 text-white hover:bg-slate-800"
+            className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-slate-900 text-white hover:bg-slate-800 transition-colors"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             <span>Try Again</span>
@@ -357,7 +279,7 @@ export const SnacksPage: React.FC = () => {
         </div>
       ) : snacks.length === 0 ? (
         /* Empty State */
-        <div className="bg-white border border-dashed border-slate-300 rounded-2xl p-12 text-center space-y-4">
+        <div className="bg-white border border-dashed border-slate-300 rounded-2xl p-8 sm:p-12 text-center space-y-4">
           <div className="w-14 h-14 rounded-2xl bg-amber-50 text-amber-500 mx-auto flex items-center justify-center">
             <PackageOpen className="w-8 h-8" />
           </div>
@@ -372,7 +294,7 @@ export const SnacksPage: React.FC = () => {
           {(search || category || status) && (
             <button
               onClick={handleResetFilters}
-              className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-amber-600 text-white hover:bg-amber-700 shadow-sm transition-colors"
+              className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-amber-600 text-white hover:bg-amber-700 shadow-sm transition-colors"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span>Clear All Filters</span>
@@ -380,8 +302,8 @@ export const SnacksPage: React.FC = () => {
           )}
         </div>
       ) : (
-        /* Snack Cards Grid */
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        /* Snack Cards Grid - fully responsive on mobile (1 col), tablet (2 cols), desktop (3 cols) */
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
           {snacks.map((snack) => (
             <SnackCard
               key={snack.id}
